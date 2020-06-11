@@ -1,0 +1,15 @@
+{
+	"pools": [
+		{
+			"name": "fish",
+			"rolls": 1,
+			"entries": [
+				{
+					"type": "loot_table",
+					"name": "abyssaldepths:entities/fish",
+					"weight": 1
+				}
+			]
+		}
+	]
+}

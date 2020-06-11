@@ -1,0 +1,19 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"pattern": [
+		" B ",
+		" B ",
+		" S "
+	],
+	"key": {
+		"B": {
+			"item": "abyssaldepths:long_billfish_spike"
+		},
+		"S": {
+			"item": "minecraft:stick"
+		}
+	},
+	"result": {
+		"item": "abyssaldepths:spike_sword"
+	}
+}

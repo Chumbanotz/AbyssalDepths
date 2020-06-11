@@ -1,0 +1,16 @@
+[
+{
+  "modid": "abyssaldepths",
+  "name": "Abyssal Depths",
+  "description": "A port of Aquatic Abyss",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "https://www.curseforge.com/minecraft/mc-mods/abyssal-depths",
+  "updateUrl": "",
+  "authorList": ["Chumbanotz"],
+  "credits": "shcott21/thehippomaster21",
+  "logoFile": "logo.png",
+  "screenshots": [],
+  "dependencies": []
+}
+]

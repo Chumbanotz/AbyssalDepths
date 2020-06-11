@@ -1,0 +1,15 @@
+{
+	"pools": [
+		{
+			"name": "bannerfish",
+			"rolls": 1,
+			"entries": [
+				{
+					"type": "item",
+					"name": "abyssaldepths:bannerfish",
+					"weight": 1
+				}
+			]
+		}
+	]
+}

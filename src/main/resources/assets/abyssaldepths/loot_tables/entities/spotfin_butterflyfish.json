@@ -1,0 +1,29 @@
+{
+	"pools": [
+		{
+			"name": "butterflyfish",
+			"rolls": 1,
+			"entries": [
+				{
+					"type": "item",
+					"name": "abyssaldepths:spotfin_butterflyfish",
+					"weight": 1,
+					"functions": [
+						{
+							"function": "furnace_smelt",
+							"conditions": [
+								{
+									"condition": "entity_properties",
+									"entity": "this",
+									"properties": {
+										"on_fire": true
+									}
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}
