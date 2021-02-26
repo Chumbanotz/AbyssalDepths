@@ -24,9 +24,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.EnumHelper;
 
 public class Goggles extends ItemArmor {
-	private static final ItemArmor.ArmorMaterial GOGGLES = EnumHelper.addArmorMaterial(AbyssalDepths.MOD_ID + "goggles", AbyssalDepths.MOD_ID + ":goggles", 0, new int[] {0, 0, 0, 0}, 0, SoundEvents.ITEM_ARMOR_EQUIP_GENERIC, 0);
-	private static final PotionEffect NIGHT_VISION = new PotionEffect(MobEffects.NIGHT_VISION, Integer.MAX_VALUE, 0, true, false);
-	private static final PotionEffect WATER_BREATHING = new PotionEffect(MobEffects.WATER_BREATHING, Integer.MAX_VALUE, 0, true, false);
+	private static final ItemArmor.ArmorMaterial GOGGLES = EnumHelper.addArmorMaterial(AbyssalDepths.MOD_ID + ":goggles", AbyssalDepths.MOD_ID + ":goggles", 0, new int[] {0, 0, 0, 0}, 0, SoundEvents.ITEM_ARMOR_EQUIP_GENERIC, 0);
+	private static final String TEXTURE = AbyssalDepths.MOD_ID + ":textures/models/armor/goggles.png";
+
 	public Goggles() {
 		super(GOGGLES, 0, EntityEquipmentSlot.HEAD);
 		this.setMaxDamage(4800);
@@ -34,15 +34,33 @@ public class Goggles extends ItemArmor {
 
 	@Override
 	public void onArmorTick(World world, EntityPlayer player, ItemStack stack) {
+		if (world.isRemote) {
+			return;
+		}
+
 		if (player.isInsideOfMaterial(Material.WATER)) {
-			player.addPotionEffect(NIGHT_VISION);
-			player.addPotionEffect(WATER_BREATHING);
-			if (!player.isCreative() && !player.isSpectator()) {
-				stack.damageItem(1, player);
+			if (!hasEffect(player, MobEffects.NIGHT_VISION)) {
+				player.removePotionEffect(MobEffects.NIGHT_VISION);
+				player.addPotionEffect(new PotionEffect(MobEffects.NIGHT_VISION, Integer.MAX_VALUE, -1, true, false));
 			}
-		} else if (hasEffects(player)) {
-			player.removePotionEffect(MobEffects.NIGHT_VISION);
-			player.removePotionEffect(MobEffects.WATER_BREATHING);
+
+			if (!hasEffect(player, MobEffects.WATER_BREATHING)) {
+				player.removePotionEffect(MobEffects.WATER_BREATHING);
+				player.addPotionEffect(new PotionEffect(MobEffects.WATER_BREATHING, Integer.MAX_VALUE, -1, true, false));
+			}
+
+			if (!player.capabilities.disableDamage && stack.attemptDamageItem(1, itemRand, null)) {
+				player.renderBrokenItemStack(stack);
+				stack.shrink(1);
+			}
+		} else {
+			if (hasEffect(player, MobEffects.NIGHT_VISION)) {
+				player.removePotionEffect(MobEffects.NIGHT_VISION);
+			}
+
+			if (hasEffect(player, MobEffects.WATER_BREATHING)) {
+				player.removePotionEffect(MobEffects.WATER_BREATHING);
+			}
 		}
 	}
 
@@ -63,14 +81,11 @@ public class Goggles extends ItemArmor {
 
 	@Override
 	public String getArmorTexture(ItemStack stack, Entity entity, EntityEquipmentSlot slot, String type) {
-		return AbyssalDepths.MOD_ID + ":textures/models/armor/goggles.png";
+		return TEXTURE;
 	}
 
-	public static boolean hasEffects(EntityLivingBase entityLivingBase) {
-		return hasEffect(entityLivingBase, MobEffects.NIGHT_VISION) && hasEffect(entityLivingBase, MobEffects.WATER_BREATHING);
-	}
-
-	private static boolean hasEffect(EntityLivingBase entityLivingBase, Potion potion) {
-		return entityLivingBase.isPotionActive(potion) && !entityLivingBase.getActivePotionEffect(potion).doesShowParticles();
+	public static boolean hasEffect(EntityLivingBase entity, Potion potion) {
+		PotionEffect potionEffect = entity.getActivePotionEffect(potion);
+		return potionEffect != null && potionEffect.getIsAmbient() && !potionEffect.doesShowParticles() && potionEffect.getAmplifier() == -1;
 	}
 }

@@ -5,7 +5,6 @@ import javax.annotation.Nullable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 
@@ -24,25 +23,6 @@ public class ADGlobal {
 		}
 
 		return angle;
-	}
-
-	public static int[] longToInts(long l) {
-		int[] arr = new int[] {(int)(l >> 32), (int)l};
-		return arr;
-	}
-
-	public static long intsToLong(int... arr) {
-		return (long)arr[0] << 32 | (long)arr[1] & 4294967295L;
-	}
-
-	public static int rgb(float red, float green, float blue) {
-		return rgb(MathHelper.floor(red * 255.0F), MathHelper.floor(green * 255.0F), MathHelper.floor(blue * 255.0F));
-	}
-
-	public static int rgb(int red, int green, int blue) {
-		int color = (red << 8) + green;
-		color = (color << 8) + blue;
-		return color;
 	}
 
 	@Nullable

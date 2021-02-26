@@ -1,21 +1,16 @@
 package chumbanotz.abyssaldepths.entity.fish;
 
-import chumbanotz.abyssaldepths.entity.SeaSerpent;
+import chumbanotz.abyssaldepths.entity.ComplexCreature;
 import chumbanotz.abyssaldepths.entity.WaterCreature;
-import chumbanotz.abyssaldepths.entity.billfish.Billfish;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.util.DamageSource;
 import net.minecraft.world.World;
 
 public abstract class Fish extends WaterCreature {
 	private static final DataParameter<Float> SCALE = EntityDataManager.createKey(Fish.class, DataSerializers.FLOAT);
-	private static final DataParameter<Integer> COLOR = EntityDataManager.createKey(Fish.class, DataSerializers.VARINT);
 
 	public Fish(World world) {
 		super(world);
@@ -33,19 +28,6 @@ public abstract class Fish extends WaterCreature {
 	protected void entityInit() {
 		super.entityInit();
 		this.dataManager.register(SCALE, 0.5F + this.rand.nextFloat() * 0.6F);
-		this.dataManager.register(COLOR, 0);
-	}
-
-	public int getColor() {
-		return this.dataManager.get(COLOR);
-	}
-
-	protected void setColor(int color) {
-		this.dataManager.set(COLOR, color);
-	}
-
-	public boolean isColorful() {
-		return this.getColor() > 0;
 	}
 
 	public float getScale() {
@@ -60,7 +42,8 @@ public abstract class Fish extends WaterCreature {
 	public void notifyDataManagerChange(DataParameter<?> key) {
 		super.notifyDataManagerChange(key);
 		if (SCALE.equals(key)) {
-			this.setSize(this.width * this.getScale(), this.height * this.getScale());
+			float scale = this.getScale();
+			this.setSize(this.width * scale, this.height * scale);
 		}
 	}
 
@@ -71,40 +54,21 @@ public abstract class Fish extends WaterCreature {
 		this.school.setRadius((float)this.school.getMaxSize());
 	}
 
-	private boolean shouldFleeFrom(Entity entity) {
-		return this.getDistanceSq(entity) <= 4.0D && (entity instanceof SeaSerpent || entity instanceof Billfish);
-	}
-
 	@Override
 	protected void moveCreature() {
-		for (EntityLivingBase entityLivingBase : this.world.getEntitiesWithinAABB(EntityLivingBase.class, this.getEntityBoundingBox().grow(2.0D), this::shouldFleeFrom)) {
-			this.fleeFromEntity = entityLivingBase;
+		for (ComplexCreature entityLivingBase : this.world.getEntitiesWithinAABB(ComplexCreature.class, this.getEntityBoundingBox().grow(2.0D))) {
+			if (this.getDistanceSq(entityLivingBase) <= 4.0D && this.getEntitySenses().canSee(entityLivingBase)) {
+				this.fleeFromEntity = entityLivingBase;
+			}
 		}
 
 		super.moveCreature();
 	}
 
 	@Override
-	public boolean attackEntityFrom(DamageSource source, float dmg) {
-		EntityLivingBase living = null;
-		if (source.getTrueSource() instanceof EntityLivingBase) {
-			living = (EntityLivingBase)source.getTrueSource();
-		}
-
-		if (!this.world.isRemote) {
-			this.fleeFromEntity = living;
-		}
-
-		return super.attackEntityFrom(source, dmg);
-	}
-
-	@Override
 	public void writeEntityToNBT(NBTTagCompound compound) {
 		super.writeEntityToNBT(compound);
 		compound.setFloat("Scale", this.getScale());
-		if (this.isColorful()) {
-			compound.setInteger("Color", this.getColor());
-		}
 	}
 
 	@Override
@@ -112,10 +76,6 @@ public abstract class Fish extends WaterCreature {
 		super.readEntityFromNBT(compound);
 		if (compound.hasKey("Scale")) {
 			this.setScale(compound.getFloat("Scale"));
-		}
-
-		if (compound.hasKey("Color")) {
-			this.setColor(compound.getInteger("Color"));
 		}
 	}
 }

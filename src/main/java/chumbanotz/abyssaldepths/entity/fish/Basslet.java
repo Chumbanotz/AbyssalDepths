@@ -20,7 +20,7 @@ public class Basslet extends Fish {
 
 	@Override
 	public boolean getCanSpawnHere() {
-		return super.getCanSpawnHere() && this.posY <= 48.0D;
+		return this.posY <= 48.0D;
 	}
 
 	public static class Fairy extends Basslet {

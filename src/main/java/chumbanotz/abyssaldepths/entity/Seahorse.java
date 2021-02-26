@@ -23,7 +23,6 @@ import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.EnumParticleTypes;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
@@ -32,7 +31,6 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 	private static final DataParameter<Optional<UUID>> OWNER_UNIQUE_ID = EntityDataManager.createKey(Seahorse.class, DataSerializers.OPTIONAL_UNIQUE_ID);
 	private static final DataParameter<Byte> TAME_AMOUNT = EntityDataManager.createKey(Seahorse.class, DataSerializers.BYTE);
 	private static final DataParameter<Byte> MARK = EntityDataManager.createKey(Seahorse.class, DataSerializers.BYTE);
-	private static final DataParameter<Integer> COLOR = EntityDataManager.createKey(Seahorse.class, DataSerializers.VARINT);
 
 	public Seahorse(World world) {
 		super(world);
@@ -43,9 +41,8 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 	protected void entityInit() {
 		super.entityInit();
 		this.dataManager.register(OWNER_UNIQUE_ID, Optional.absent());
-		this.dataManager.register(TAME_AMOUNT, (byte)this.getRandomTameAmount());
+		this.dataManager.register(TAME_AMOUNT, (byte)(3 + this.rand.nextInt(3)));
 		this.dataManager.register(MARK, (byte)0);
-		this.dataManager.register(COLOR, ADGlobal.rgb(0.79607844F, 0.8509804F, 0.43529412F));
 	}
 
 	@Override
@@ -73,13 +70,14 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 
 	@Override
 	@Nullable
-	public EntityLivingBase getOwner() {
-		return this.getOwnerId() != null ? this.world.getPlayerEntityByUUID(this.getOwnerId()) : null;
+	public EntityPlayer getOwner() {
+		UUID uuid = this.getOwnerId();
+		return uuid == null ? null : this.world.getPlayerEntityByUUID(uuid);
 	}
 
 	@Override
 	public boolean getTamed() {
-		return this.getOwner() != null;
+		return this.getOwnerId() != null;
 	}
 
 	public int getTameAmount() {
@@ -90,24 +88,12 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 		this.dataManager.set(TAME_AMOUNT, (byte)amount);
 	}
 
-	private int getRandomTameAmount() {
-		return 3 + this.rand.nextInt(3);
-	}
-
 	public int getMark() {
 		return this.dataManager.get(MARK);
 	}
 
 	private void setMark(int mark) {
 		this.dataManager.set(MARK, (byte)mark);
-	}
-
-	public int getColor() {
-		return this.dataManager.get(COLOR);
-	}
-
-	private void setColor(int color) {
-		this.dataManager.set(COLOR, color);
 	}
 
 	@Override
@@ -200,7 +186,9 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 	@Override
 	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, IEntityLivingData livingdata) {
 		if (this.rand.nextInt(3) == 0) {
-			this.setColor(ADGlobal.rgb(this.rand.nextFloat(), this.rand.nextFloat(), this.rand.nextFloat()));
+			this.setColor(this.rand.nextFloat(), this.rand.nextFloat(), this.rand.nextFloat());
+		} else {
+			this.setColor(0.79607844F, 0.8509804F, 0.43529412F);
 		}
 
 		this.setMark(this.rand.nextInt(3));
@@ -215,11 +203,6 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 	@Override
 	public boolean canBeSteered() {
 		return this.getControllingPassenger() instanceof EntityLivingBase;
-	}
-
-	@Override
-	public boolean canBeLeashedTo(EntityPlayer player) {
-		return !this.getLeashed() && this.getTamed();
 	}
 
 	@Override
@@ -272,33 +255,7 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 				}
 
 				super.travel(passenger.moveStrafing, vertical, 0.0F);
-				this.prevLimbSwingAmount = this.limbSwingAmount;
-				double d0 = this.posX - this.prevPosX;
-				double d2 = this.posY - this.prevPosY;
-				double d1 = this.posZ - this.prevPosZ;
-				if (!this.world.isRemote) {
-					d0 = this.dPosX;
-					d2 = this.dPosY;
-					d1 = this.dPosZ;
-				}
-
-				float f6 = MathHelper.sqrt(d0 * d0 + d2 * d2 + d1 * d1) * 4.0F;
-				if (f6 > 1.0F) {
-					f6 = 1.0F;
-				}
-
-				if (!this.isInWater() && !this.onGround) {
-					this.limbSwingAmount *= 0.4F;
-				} else {
-					float delta = f6 - this.limbSwingAmount;
-					if (delta >= 0.0F) {
-						this.limbSwingAmount += delta * 0.4F;
-					} else {
-						this.limbSwingAmount += delta * 0.1F;
-					}
-				}
-
-				this.limbSwing += this.limbSwingAmount;
+				this.handleLimbSwing();
 			}
 		} else {
 			super.travel(strafe, vertical, forward);
@@ -338,7 +295,7 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 
 	@Override
 	public boolean getCanSpawnHere() {
-		return super.getCanSpawnHere() && this.posY <= 48.0D;
+		return this.posY <= 48.0D;
 	}
 
 	@Override
@@ -352,7 +309,6 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 	public void writeEntityToNBT(NBTTagCompound compound) {
 		super.writeEntityToNBT(compound);
 		compound.setByte("Mark", (byte)this.getMark());
-		compound.setInteger("Color", this.getColor());
 		if (this.getTamed()) {
 			compound.setUniqueId("OwnerUUID", this.getOwnerId());
 		}
@@ -362,9 +318,8 @@ public class Seahorse extends WaterCreature implements IEntityOwnable {
 	public void readEntityFromNBT(NBTTagCompound compound) {
 		super.readEntityFromNBT(compound);
 		this.setMark(compound.getByte("Mark"));
-		this.setOwnerId(compound.getUniqueId("OwnerUUID"));
-		if (compound.hasKey("Color")) {
-			this.setColor(compound.getInteger("Color"));
+		if (compound.hasUniqueId("OwnerUUID")) {
+			this.setOwnerId(compound.getUniqueId("OwnerUUID"));
 		}
 	}
 }

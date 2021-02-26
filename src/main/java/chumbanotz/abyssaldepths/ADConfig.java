@@ -21,9 +21,9 @@ public class ADConfig {
 	}
 
 	public static class Spawns {
-		@Config.LangKey("config.abyssaldepths.spawns.dimensionBlacklist")
-		@Config.Comment("Prevent mobs from spawning in the specified dimension IDs")
-		public int[] dimensionBlacklist = {};
+		@Config.LangKey("config.abyssaldepths.spawns.biomeWhitelist")
+		@Config.Comment({"The mod IDs of the biomes that these mobs are allowed to spawn in, only vanilla biomes by default", "Example - 'minecraft, twilightforest'", "You can see a mod's ID by clicking on the 'Mods' button in-game and looking on the right"})
+		public String[] biomeWhitelist = {"minecraft"};
 
 		@Config.LangKey("entity.abyssaldepths.bannerfish.name")
 		@Config.RangeInt(min = 0, max = 100)

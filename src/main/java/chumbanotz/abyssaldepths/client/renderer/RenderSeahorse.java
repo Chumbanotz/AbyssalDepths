@@ -45,16 +45,13 @@ public class RenderSeahorse extends RenderAquaticCreature<Seahorse> {
 	@Override
 	protected void renderModel(Seahorse living, float par2, float par3, float par4, float par5, float par6, float par7) {
 		this.bindEntityTexture(living);
-		int color = living.getColor();
-        float red = (float)(color >> 16 & 255) / 255.0F;
-        float green = (float)(color >> 8 & 255) / 255.0F;
-        float blue = (float)(color >> 0 & 255) / 255.0F;
-		GlStateManager.color(red, green, blue);
+
+		GlStateManager.color(living.getRed(), living.getGreen(), living.getBlue());
 		if (!living.isInvisible()) {
 			this.mainModel.render(living, par2, par3, par4, par5, par6, par7);
 		} else if (!living.isInvisibleToPlayer(Minecraft.getMinecraft().player)) {
 			GlStateManager.pushMatrix();
-			GlStateManager.color(red, green, blue, 0.15F);
+			GlStateManager.color(living.getRed(), living.getGreen(), living.getBlue(), 0.15F);
 			GlStateManager.depthMask(false);
 			GlStateManager.enableBlend();
 			GlStateManager.blendFunc(770, 771);

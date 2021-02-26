@@ -7,7 +7,9 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.IEntityMultiPart;
 import net.minecraft.entity.MoverType;
+import net.minecraft.entity.MultiPartEntityPart;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
@@ -18,7 +20,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-public abstract class ComplexCreature extends AquaticCreature {
+public abstract class ComplexCreature extends AquaticCreature implements IEntityMultiPart {
 	private static final DataParameter<Integer> TICKS_EXISTED = EntityDataManager.createKey(ComplexCreature.class, DataSerializers.VARINT);
 	private static final DataParameter<Float> LIMB_SWING = EntityDataManager.createKey(ComplexCreature.class, DataSerializers.FLOAT);
 	protected int moveTick;
@@ -42,13 +44,13 @@ public abstract class ComplexCreature extends AquaticCreature {
 	}
 
 	@Override
-	public boolean canBePushed() {
-		return false;
+	public boolean isInWater() {
+		return this.world.handleMaterialAcceleration(this.getEntityBoundingBox().grow(0.0D, -0.3D, 0.0D), Material.WATER, this);
 	}
 
 	@Override
-	public boolean isInWater() {
-		return this.world.handleMaterialAcceleration(this.getEntityBoundingBox().grow(0.0D, -0.3D, 0.0D), Material.WATER, this);
+	protected boolean canDespawn() {
+		return this.getAttackTarget() == null;
 	}
 
 	@Override
@@ -57,15 +59,6 @@ public abstract class ComplexCreature extends AquaticCreature {
 		double prevY = this.posY;
 		double prevZ = this.posZ;
 		super.onUpdate();
-		BodyPart[] partList = getPartList();
-		if (!this.world.isRemote) {
-			for (int i = 0; i < partList.length; i++) {
-				if (!(partList[i]).spawned) {
-					this.world.spawnEntity(partList[i]);
-					(partList[i]).spawned = true;
-				}
-			}
-		}
 
 		if (!this.world.isRemote) {
 			this.dataManager.set(TICKS_EXISTED, this.ticksExisted);
@@ -111,7 +104,7 @@ public abstract class ComplexCreature extends AquaticCreature {
 		} else if (this.targetVec != null) {
 			++this.moveTick;
 			targetSpeed = this.moveByPathing();
-		} else if (this.findNewPath() && this.ticksExisted > 20) {
+		} else if (this.idleTime < 100 && this.findNewPath() && this.ticksExisted > 20) {
 			this.setRandomPath();
 		}
 
@@ -160,7 +153,8 @@ public abstract class ComplexCreature extends AquaticCreature {
 		return this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue() * 1.8D;
 	}
 
-	public abstract BodyPart[] getPartList();
+	@Override
+	public abstract BodyPart[] getParts();
 
 	public abstract Bone getBaseBone();
 
@@ -181,10 +175,11 @@ public abstract class ComplexCreature extends AquaticCreature {
 	}
 
 	private void setBodyPartPositions() {
-		BodyPart[] partList = this.getPartList();
+		BodyPart[] partList = this.getParts();
 		Bone baseBone = this.getBaseBone();
 		Bone[] boneList = this.getBoneList();
 		Vec3d vec = boneList[0].getRotation().getRotated(baseBone.getRotation()).rotateVector(boneList[0].getLength() / 2.0F);
+		this.world.updateEntity(partList[0]);
 		partList[0].setLocationAndAngles(this.posX + vec.x, this.posY + vec.y, this.posZ + vec.z, this.rotationYaw, this.rotationPitch);
 		vec = baseBone.getRotatedVector();
 		Euler angle = baseBone.getRotation();
@@ -193,6 +188,7 @@ public abstract class ComplexCreature extends AquaticCreature {
 			angle = angle.getRotated(boneList[i].getRotation());
 			float length = boneList[i].getLength();
 			Vec3d midVec = angle.rotateVector(length / 2.0F);
+			this.world.updateEntity(partList[i]);
 			partList[i].setLocationAndAngles(this.posX + vec.x + midVec.x, this.posY + vec.y + midVec.y, this.posZ + vec.z + midVec.z, this.rotationYaw, this.rotationPitch);
 			Vec3d target = angle.rotateVector(length);
 			vec = vec.add(target.x, target.y, target.z);
@@ -214,6 +210,7 @@ public abstract class ComplexCreature extends AquaticCreature {
 			if (living.getHealth() - dmg < 0.0F) {
 				this.swingArm(EnumHand.MAIN_HAND);
 				living.setDead();
+				this.heal(1.0F);
 			}
 		}
 
@@ -225,7 +222,7 @@ public abstract class ComplexCreature extends AquaticCreature {
 	public void eatOrDamageEntity(BodyPart part, Entity target, float dmg) {
 		if (target instanceof EntityLiving && target.width < this.width + 0.5F && target.height < this.height + 0.5F) {
 			EntityLiving living = (EntityLiving)target;
-			if (living.getHealth() - dmg < 0.0F && (part == this.getPartList()[0] || part == this.getPartList()[1])) {
+			if (living.getHealth() - dmg < 0.0F && (part == this.getParts()[0] || part == this.getParts()[1])) {
 				this.swingArm(EnumHand.MAIN_HAND);
 				living.attackEntityFrom(DamageSource.causeMobDamage(this), 0.0F);
 				living.setDead();
@@ -246,5 +243,23 @@ public abstract class ComplexCreature extends AquaticCreature {
 		}
 
 		return super.attackEntityFrom(source, amount);
+	}
+
+	@Override
+	public boolean attackEntityFromPart(MultiPartEntityPart part, DamageSource source, float damage) {
+		return this.attackEntityFrom(source, damage * 0.85F);
+	}
+
+	@Override
+	public World getWorld() {
+		return this.world;
+	}
+
+	@Override
+	public void onRemovedFromWorld() {
+		super.onRemovedFromWorld();
+		for (BodyPart bodyPart : this.getParts()) {
+			this.world.removeEntityDangerously(bodyPart);
+		}
 	}
 }

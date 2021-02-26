@@ -2,15 +2,15 @@ package chumbanotz.abyssaldepths.entity;
 
 import com.google.common.base.Predicate;
 
-import chumbanotz.abyssaldepths.entity.ai.EntityAIHuntUnderwater;
+import chumbanotz.abyssaldepths.entity.ai.EntityAIFindEntityNearest;
+import chumbanotz.abyssaldepths.entity.ai.EntityAIHurtByTarget;
 import chumbanotz.abyssaldepths.util.Bone;
 import chumbanotz.abyssaldepths.util.Euler;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.INpc;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.ai.EntityAIHurtByTarget;
-import net.minecraft.entity.item.EntityBoat;
 import net.minecraft.entity.monster.EntityGolem;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.passive.IAnimals;
@@ -25,8 +25,12 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class SeaSerpent extends ComplexCreature implements IMob {
-	private static final Predicate<EntityLivingBase> IN_BOAT = target -> {
-		return target.getRidingEntity() instanceof EntityBoat && target.getRidingEntity().isInWater();
+	private static final Predicate<EntityLivingBase> CAN_TARGET = target -> {
+		if (target.isEntityUndead() || target instanceof IMob || target instanceof EntityGolem) {
+			return false;
+		}
+
+		return target.isRiding() && target.getRidingEntity().isInWater() || target.isInWater() || !target.onGround;
 	};
 	private static final DataParameter<Boolean> ATTACKING = EntityDataManager.createKey(SeaSerpent.class, DataSerializers.BOOLEAN);
 	private static final DataParameter<Byte> HUNGER = EntityDataManager.createKey(SeaSerpent.class, DataSerializers.BYTE);
@@ -69,9 +73,9 @@ public class SeaSerpent extends ComplexCreature implements IMob {
 
 	@Override
 	protected void initEntityAI() {
-		this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, false));
-		this.targetTasks.addTask(2, new SeaSerpent.AIHuntPrey(this, IN_BOAT));
-		this.targetTasks.addTask(3, new SeaSerpent.AIHuntPrey(this, EntityLivingBase::isInWater));
+		this.targetTasks.addTask(0, new EntityAIHurtByTarget(this));
+		this.targetTasks.addTask(1, new EntityAIFindEntityNearest<>(this, EntityPlayer.class, CAN_TARGET));
+		this.targetTasks.addTask(2, new SeaSerpent.AIHuntPrey(this));
 	}
 
 	@Override
@@ -110,12 +114,12 @@ public class SeaSerpent extends ComplexCreature implements IMob {
 	}
 
 	@Override
-	public boolean isPushedByWater() {
-		return false;
+	public int getAir() {
+		return 300;
 	}
 
 	@Override
-	public BodyPart[] getPartList() {
+	public BodyPart[] getParts() {
 		return this.partList;
 	}
 
@@ -131,14 +135,11 @@ public class SeaSerpent extends ComplexCreature implements IMob {
 
 	@Override
 	public void updatePitchRotations(float partialTick) {
-		Euler euler;
 		for (int i = this.boneList.length - 1; i > 1; --i) {
 			if (partialTick == 1.0F) {
-				euler = this.boneList[i].getRotation();
-				euler.x += this.targetAngles[i].x = this.targetAngles[i - 1].x;
+				this.boneList[i].getRotation().x += this.targetAngles[i].x = this.targetAngles[i - 1].x;
 			} else {
-				euler = this.boneList[i].getRotation();
-				euler.x += this.targetAngles[i].x + (this.targetAngles[i - 1].x - this.targetAngles[i].x) * partialTick;
+				this.boneList[i].getRotation().x += this.targetAngles[i].x + (this.targetAngles[i - 1].x - this.targetAngles[i].x) * partialTick;
 			}
 		}
 
@@ -152,10 +153,8 @@ public class SeaSerpent extends ComplexCreature implements IMob {
 		for (int i = 0; i < this.boneList.length; ++i) {
 			float breatheAnim = MathHelper.sin(0.1F * ((float)this.ticksExisted + partialTick - (float)i * 6.0F));
 			float moveAnim = MathHelper.sin(0.2F * (moveTick - (float)i * 2.0F)) * moveScale;
-			euler = this.boneList[i].getRotation();
-			euler.x += breatheAnim * 1.1F;
-			euler = this.boneList[i].getRotation();
-			euler.x += moveAnim * 6.0F;
+			this.boneList[i].getRotation().x += breatheAnim * 1.1F;
+			this.boneList[i].getRotation().x += moveAnim * 6.0F;
 			if (i == 0 && partialTick == 1.0F) {
 				Euler angle = new Euler(this.currentPitch + 90.0F, this.rotationYaw, 0.0F);
 				Vec3d vec = angle.rotateVector(moveAnim * 0.03F);
@@ -169,13 +168,10 @@ public class SeaSerpent extends ComplexCreature implements IMob {
 	@Override
 	public void updateYawRotations(float partialTick) {
 		for (int i = this.boneList.length - 1; i > 1; --i) {
-			Euler euler;
 			if (partialTick == 1.0F) {
-				euler = this.boneList[i].getRotation();
-				euler.y += this.targetAngles[i].y = this.targetAngles[i - 1].y;
+				this.boneList[i].getRotation().y += this.targetAngles[i].y = this.targetAngles[i - 1].y;
 			} else {
-				euler = this.boneList[i].getRotation();
-				euler.y += this.targetAngles[i].y + (this.targetAngles[i - 1].y - this.targetAngles[i].y) * partialTick;
+				this.boneList[i].getRotation().y += this.targetAngles[i].y + (this.targetAngles[i - 1].y - this.targetAngles[i].y) * partialTick;
 			}
 		}
 
@@ -201,7 +197,7 @@ public class SeaSerpent extends ComplexCreature implements IMob {
 				}
 			}
 
-			this.strikeTick = Math.max(0, this.strikeTick - 1);
+			this.strikeTick = Math.max(0, this.strikeTick - this.hurtTime - 1);
 		}
 	}
 
@@ -318,7 +314,7 @@ public class SeaSerpent extends ComplexCreature implements IMob {
 	public void collideWithEntity(BodyPart part, Entity entity) {
 		EntityLivingBase target = this.getAttackTarget();
 		float dmg = (float)this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getAttributeValue();
-		BodyPart[] partList = this.getPartList();
+		BodyPart[] partList = this.getParts();
 
 		if (partList != null && part == partList[partList.length - 1] && this.dPosX * this.dPosX + this.dPosY * this.dPosY + this.dPosZ * this.dPosZ > 0.04000000000000001D) {
 			entity.attackEntityFrom(DamageSource.causeMobDamage(this), dmg * 0.6F);
@@ -382,12 +378,14 @@ public class SeaSerpent extends ComplexCreature implements IMob {
 	@Override
 	public void readEntityFromNBT(NBTTagCompound tagcompound) {
 		super.readEntityFromNBT(tagcompound);
-		this.setHunger(tagcompound.getByte("Hunger"));
+		if (tagcompound.hasKey("Hunger")) {
+			this.setHunger(tagcompound.getByte("Hunger"));
+		}
 	}
 
 	@Override
 	public boolean getCanSpawnHere() {
-		return this.rand.nextInt(12) == 0 && this.posY < 48.0D && super.getCanSpawnHere();
+		return this.posY < 48.0D;
 	}
 
 	@Override
@@ -395,16 +393,14 @@ public class SeaSerpent extends ComplexCreature implements IMob {
 		return 0.8F;
 	}
 
-	static class AIHuntPrey extends EntityAIHuntUnderwater<EntityLivingBase> {
-		public AIHuntPrey(SeaSerpent creature, Predicate<? super EntityLivingBase> targetSelector) {
-			super(creature, EntityLivingBase.class, 0, true, false, entity -> {
-				return !entity.isEntityUndead() && !(entity instanceof IMob) && !(entity instanceof EntityGolem) && targetSelector.test(entity);
-			});
+	static class AIHuntPrey extends EntityAIFindEntityNearest<EntityLiving> {
+		public AIHuntPrey(SeaSerpent creature) {
+			super(creature, EntityLiving.class, CAN_TARGET);
 		}
 
 		@Override
 		public boolean shouldExecute() {
-			return ((SeaSerpent)this.taskOwner).getHunger() > 0 && super.shouldExecute();
+			return ((SeaSerpent)this.mob).getHunger() > 0 && super.shouldExecute();
 		}
 	}
 }

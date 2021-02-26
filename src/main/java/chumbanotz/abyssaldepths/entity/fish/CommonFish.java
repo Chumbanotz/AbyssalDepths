@@ -1,6 +1,5 @@
 package chumbanotz.abyssaldepths.entity.fish;
 
-import chumbanotz.abyssaldepths.util.ADGlobal;
 import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
@@ -29,10 +28,7 @@ public class CommonFish extends Fish {
 
 	@Override
 	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, IEntityLivingData livingdata) {
-		if (this.rand.nextBoolean()) {
-			this.setColor(ADGlobal.rgb(0.2F + this.rand.nextFloat() * 0.8F, 0.2F + this.rand.nextFloat() * 0.8F, 0.2F + this.rand.nextFloat() * 0.8F));
-		}
-
+		this.setColor(0.2F + this.rand.nextFloat() * 0.8F, 0.2F + this.rand.nextFloat() * 0.8F, 0.2F + this.rand.nextFloat() * 0.8F);
 		return super.onInitialSpawn(difficulty, livingdata);
 	}
 }

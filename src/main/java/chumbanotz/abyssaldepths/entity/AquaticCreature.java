@@ -7,12 +7,9 @@ import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityList;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.EnumCreatureType;
-import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.MoverType;
+import net.minecraft.entity.passive.EntityWaterMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.MobEffects;
 import net.minecraft.util.DamageSource;
@@ -21,16 +18,15 @@ import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 
-public abstract class AquaticCreature extends EntityCreature implements IEntityAdditionalSpawnData {
+public abstract class AquaticCreature extends EntityWaterMob implements IEntityAdditionalSpawnData {
 	public int randNumTick;
 	protected float currentYaw;
-	public float currentPitch;
+	protected float currentPitch;
 	protected float prevCurrentYaw;
-	public float prevCurrentPitch;
+	protected float prevCurrentPitch;
 	protected double netSpeed;
 	protected double dPosX;
 	protected double dPosY;
@@ -39,26 +35,16 @@ public abstract class AquaticCreature extends EntityCreature implements IEntityA
 
 	public AquaticCreature(World world) {
 		super(world);
-	}
-
-	@Override
-	protected int getExperiencePoints(EntityPlayer player) {
-		return 1 + this.world.rand.nextInt(3);
-	}
-
-	@Override
-	public boolean canBreatheUnderwater() {
-		return true;
-	}
-
-	@Override
-	protected boolean canBeRidden(Entity entityIn) {
-		return super.canBeRidden(entityIn) && entityIn instanceof EntityLivingBase;
+		this.randNumTick = this.rand.nextInt(100);
 	}
 
 	@Override
 	public boolean canBeLeashedTo(EntityPlayer player) {
 		return false;
+	}
+
+	public float getCurrentPitch(float partialTicks) {
+		return this.prevCurrentPitch + (this.currentPitch - this.prevCurrentPitch) * partialTicks;
 	}
 
 	public boolean onLand() {
@@ -124,22 +110,20 @@ public abstract class AquaticCreature extends EntityCreature implements IEntityA
 	}
 
 	public boolean isClearPath(double x, double y, double z) {
-		boolean water = this.world.getBlockState(new BlockPos((int)x, (int)y, (int)z)).getMaterial() == Material.WATER;
+		boolean water = this.world.getBlockState(new BlockPos((int)x, (int)y, (int)z)).getMaterial() == this.getPathingMaterial();
 		boolean seen = this.world.rayTraceBlocks(this.getPositionEyes(1.0F), new Vec3d(x, y, z)) == null;
 		return water && seen;
 	}
 
 	public boolean isClearPathWaterBelow(double x, double y, double z) {
-		boolean water = this.world.getBlockState(new BlockPos((int)x, (int)y, (int)z)).getMaterial() == Material.WATER;
-		boolean waterBelow = this.world.getBlockState(new BlockPos((int)x, (int)y - 1, (int)z)).getMaterial() == Material.WATER;
+		boolean water = this.world.getBlockState(new BlockPos((int)x, (int)y, (int)z)).getMaterial() == this.getPathingMaterial();
+		boolean waterBelow = this.world.getBlockState(new BlockPos((int)x, (int)y - 1, (int)z)).getMaterial() == this.getPathingMaterial();
 		boolean seen = this.world.rayTraceBlocks(this.getPositionEyes(1.0F), new Vec3d(x, y, z)) == null;
 		return (water || waterBelow) && seen;
 	}
 
-	@Override
-	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, IEntityLivingData livingdata) {
-		this.randNumTick = this.rand.nextInt(100);
-		return super.onInitialSpawn(difficulty, livingdata);
+	public Material getPathingMaterial() {
+		return Material.WATER;
 	}
 
 	@Override
@@ -232,6 +216,10 @@ public abstract class AquaticCreature extends EntityCreature implements IEntityA
 			blockpos$pooledmutableblockpos.release();
 		}
 
+		this.handleLimbSwing();
+	}
+
+	protected void handleLimbSwing() {
 		this.prevLimbSwingAmount = this.limbSwingAmount;
 		double x = this.posX - this.prevPosX;
 		double y = this.posY - this.prevPosY;
@@ -277,22 +265,7 @@ public abstract class AquaticCreature extends EntityCreature implements IEntityA
 	}
 
 	@Override
-	public boolean getCanSpawnHere() {
-		return true;
-	}
-
-	@Override
-	public boolean isNotColliding() {
-		return this.world.checkNoEntityCollision(this.getEntityBoundingBox(), this);
-	}
-
-	@Override
-	public boolean isCreatureType(EnumCreatureType type, boolean forSpawnCount) {
-		if (forSpawnCount && this.isNoDespawnRequired()) {
-			return false;
-		} else {
-			return type == EnumCreatureType.WATER_CREATURE;
-		}
+	public void setInWeb() {
 	}
 
 	@Override

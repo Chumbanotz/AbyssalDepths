@@ -36,7 +36,7 @@ public class Clownfish extends Fish {
 
 	@Override
 	public boolean getCanSpawnHere() {
-		return super.getCanSpawnHere() && this.posY <= 48.0D;
+		return this.posY <= 48.0D;
 	}
 
 	@Override

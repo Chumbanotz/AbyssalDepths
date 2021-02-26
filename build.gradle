@@ -10,7 +10,7 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle.forge'
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
-version = "1.12.2-0.3.1"
+version = "1.12.2-0.3.2"
 group = "chumbanotz.abyssaldepths"
 archivesBaseName = "AbyssalDepths"
 
@@ -25,7 +25,7 @@ minecraft {
     mappings = "stable_39"
     // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
     replace '@VERSION@', project.version
-    replace '@FINGERPRINT@', project.findProperty('signSHA1')
+    //replace '@FINGERPRINT@', project.findProperty('signSHA1')
     replaceIn "chumbanotz/abyssaldepths/AbyssalDepths.java"
 }
 
@@ -48,17 +48,17 @@ processResources {
     }
 }
 
-task signJar(type: SignJar, dependsOn: reobfJar) {
-    onlyIf {
-        project.hasProperty('keyStore')
-    }
+//task signJar(type: SignJar, dependsOn: reobfJar) {
+//    onlyIf {
+//        project.hasProperty('keyStore')
+//    }
 
-    keyStore = project.findProperty('keyStore')
-    alias = project.findProperty('keyStoreAlias')
-    storePass = project.findProperty('keyStorePass')
-    keyPass = project.findProperty('keyStoreKeyPass')
-    inputFile = jar.archivePath
-    outputFile = jar.archivePath
-}
+//    keyStore = project.findProperty('keyStore')
+//    alias = project.findProperty('keyStoreAlias')
+//    storePass = project.findProperty('keyStorePass')
+//    keyPass = project.findProperty('keyStoreKeyPass')
+//    inputFile = jar.archivePath
+//    outputFile = jar.archivePath
+//}
 
-build.dependsOn signJar
+//build.dependsOn signJar

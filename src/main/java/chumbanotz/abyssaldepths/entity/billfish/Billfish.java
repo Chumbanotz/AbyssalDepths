@@ -2,7 +2,8 @@ package chumbanotz.abyssaldepths.entity.billfish;
 
 import chumbanotz.abyssaldepths.entity.BodyPart;
 import chumbanotz.abyssaldepths.entity.ComplexCreature;
-import chumbanotz.abyssaldepths.entity.ai.EntityAIHuntUnderwater;
+import chumbanotz.abyssaldepths.entity.ai.EntityAIFindEntityNearest;
+import chumbanotz.abyssaldepths.entity.ai.EntityAIHurtByTarget;
 import chumbanotz.abyssaldepths.entity.fish.CommonFish;
 import chumbanotz.abyssaldepths.util.ADGlobal;
 import chumbanotz.abyssaldepths.util.Bone;
@@ -10,8 +11,6 @@ import chumbanotz.abyssaldepths.util.Euler;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.ai.EntityAIHurtByTarget;
-import net.minecraft.entity.passive.IAnimals;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
@@ -20,7 +19,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-public abstract class Billfish extends ComplexCreature implements IAnimals {
+public abstract class Billfish extends ComplexCreature {
 	protected static final DataParameter<Byte> MARKINGS = EntityDataManager.createKey(Billfish.class, DataSerializers.BYTE);
 	private int attackTime;
 	private final BodyPart[] partList = new BodyPart[4];
@@ -49,8 +48,8 @@ public abstract class Billfish extends ComplexCreature implements IAnimals {
 
 	@Override
 	protected void initEntityAI() {
-		this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, false));
-		this.targetTasks.addTask(2, new EntityAIHuntUnderwater<>(this, CommonFish.class, 0, true, false, CommonFish::isInWater));
+		this.targetTasks.addTask(0, new EntityAIHurtByTarget(this));
+		this.targetTasks.addTask(1, new EntityAIFindEntityNearest<>(this, CommonFish.class, EntityLivingBase::isInWater));
 	}
 
 	@Override
@@ -86,7 +85,7 @@ public abstract class Billfish extends ComplexCreature implements IAnimals {
 	protected abstract int getMaxAttackTime();
 
 	@Override
-	public BodyPart[] getPartList() {
+	public BodyPart[] getParts() {
 		return this.partList;
 	}
 
@@ -102,14 +101,11 @@ public abstract class Billfish extends ComplexCreature implements IAnimals {
 
 	@Override
 	public void updateYawRotations(float partialTick) {
-		Euler euler;
 		for (int i = this.boneList.length - 1; i > 1; --i) {
 			if (partialTick == 1.0F) {
-				euler = this.boneList[i].getRotation();
-				euler.y += this.targetAngles[i].y = this.targetAngles[i - 1].y;
+				this.boneList[i].getRotation().y += this.targetAngles[i].y = this.targetAngles[i - 1].y;
 			} else {
-				euler = this.boneList[i].getRotation();
-				euler.y += this.targetAngles[i].y + (this.targetAngles[i - 1].y - this.targetAngles[i].y) * partialTick;
+				this.boneList[i].getRotation().y += this.targetAngles[i].y + (this.targetAngles[i - 1].y - this.targetAngles[i].y) * partialTick;
 			}
 		}
 
@@ -124,10 +120,8 @@ public abstract class Billfish extends ComplexCreature implements IAnimals {
 		for (int i = 0; i < this.boneList.length; ++i) {
 			float breatheAnim = MathHelper.sin(0.1F * ((float)this.ticksExisted + partialTick - (float)i * 1.4F));
 			float moveAnim = MathHelper.sin(0.7F * (moveTick - (float)i * 1.4F)) * moveScale;
-			euler = this.boneList[i].getRotation();
-			euler.y += breatheAnim * 1.1F;
-			euler = this.boneList[i].getRotation();
-			euler.y += moveAnim * 8.0F;
+			this.boneList[i].getRotation().y += breatheAnim * 1.1F;
+			this.boneList[i].getRotation().y += moveAnim * 8.0F;
 		}
 	}
 
@@ -137,7 +131,7 @@ public abstract class Billfish extends ComplexCreature implements IAnimals {
 		if (this.attackTime > this.getMaxAttackTime() && this.isEntityAlive()) {
 			float dmg = (float)this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getAttributeValue();
 			Entity entity = ADGlobal.getPointedEntity(this, this.getAttackReach());
-			ComplexCreature base = entity instanceof BodyPart ? ((BodyPart)entity).getBase() : null;
+			ComplexCreature base = entity instanceof BodyPart ? ((BodyPart)entity).getParent() : null;
 			boolean attack = true;
 			if (base != null && base.getClass().equals(this.getClass())) {
 				attack = false;

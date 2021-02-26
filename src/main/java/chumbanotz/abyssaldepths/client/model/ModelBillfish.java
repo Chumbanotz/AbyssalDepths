@@ -3,10 +3,10 @@ package chumbanotz.abyssaldepths.client.model;
 import chumbanotz.abyssaldepths.entity.billfish.Billfish;
 import chumbanotz.abyssaldepths.entity.billfish.Sailfish;
 import chumbanotz.abyssaldepths.entity.billfish.Swordfish;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelRenderer;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.math.MathHelper;
 
 public class ModelBillfish extends ModelBase {
@@ -95,13 +95,12 @@ public class ModelBillfish extends ModelBase {
 
 	@Override
 	public void render(Entity entity, float f, float f1, float f2, float f3, float f4, float f5) {
-		Billfish billfish = (Billfish)entity;
 		this.sword.showModel = entity instanceof Swordfish;
 		this.nose.showModel = entity instanceof Sailfish;
 		this.dorsalFin.showModel = entity instanceof Swordfish;
 		this.sailFin1.showModel = this.sailFin2.showModel = entity instanceof Sailfish;
 		this.setAngles();
-		this.animate(billfish, f, f1, f2, f3, f4, f5);
+		this.animate((Billfish)entity, f, f1, f2, f3, f4, f5);
 		this.head.render(f5);
 	}
 
@@ -131,10 +130,7 @@ public class ModelBillfish extends ModelBase {
 	}
 
 	public void animate(Billfish billfish, float f, float f1, float f2, float f3, float f4, float f5) {
-		billfish.resetBoneAngles();
 		float breatheAnim = MathHelper.sin(f2 * 0.12F);
-		billfish.updatePitchRotations(Minecraft.getMinecraft().getRenderPartialTicks());
-		billfish.updateYawRotations(Minecraft.getMinecraft().getRenderPartialTicks());
 
 		for (int i = 0; i < billfish.getBoneList().length; ++i) {
 			this.anatomy[i].rotateAngleX += billfish.getBoneList()[i].getRotation().x * 0.017453292F;
@@ -144,5 +140,13 @@ public class ModelBillfish extends ModelBase {
 		this.mouth.rotateAngleX += breatheAnim * 0.03F + (MathHelper.sin(this.swingProgress * (float)Math.PI) * 0.2F);
 		this.fin1.rotateAngleZ += breatheAnim * 0.05F;
 		this.fin2.rotateAngleZ += -breatheAnim * 0.05F;
+	}
+
+	@Override
+	public void setLivingAnimations(EntityLivingBase entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTickTime) {
+		Billfish billfish = (Billfish)entitylivingbaseIn;
+		billfish.resetBoneAngles();
+		billfish.updatePitchRotations(partialTickTime);
+		billfish.updateYawRotations(partialTickTime);
 	}
 }

@@ -101,7 +101,7 @@ public class ModelSeahorse extends ModelBase {
 	}
 
 	public void setAngles() {
-		this.resetAngles(this.body, this.neck1, this.neck2, this.head, this.head.getJoint(), this.snout, this.crown, this.butt, this.fin);
+		this.resetAngles(this.body, this.neck1, this.neck2, this.head, this.head.getModel(), this.snout, this.crown, this.butt, this.fin);
 		this.resetAngles(this.tail);
 		this.body.rotateAngleX += -(float)Math.PI / 8.0F;
 		this.neck1.rotateAngleX += (float)Math.PI / 16.0F;

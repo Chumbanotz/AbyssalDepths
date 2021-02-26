@@ -97,14 +97,14 @@ public class ModelButterflyfish extends ModelBase {
 	}
 
 	public void setAngles() {
-		this.resetAngles(this.body, this.head, this.leftFin, this.rightFin, this.topTail, this.topTail.getJoint(), this.bottomTail);
+		this.resetAngles(this.body, this.head, this.leftFin, this.rightFin, this.topTail, this.topTail.getModel(), this.bottomTail);
 		this.resetAngles(this.bottomFin1, this.bottomFin2, this.longFin1, this.longFin2);
 		this.head.rotateAngleX = 0.7853982F;
 		this.leftFin.rotateAngleX += -0.19634955F;
 		this.leftFin.rotateAngleY += -0.5235988F;
 		this.rightFin.rotateAngleX += -0.19634955F;
 		this.rightFin.rotateAngleY += 0.5235988F;
-		this.topTail.getJoint().rotateAngleX = 0.3926991F;
+		this.topTail.getModel().rotateAngleX = 0.3926991F;
 		this.bottomTail.rotateAngleX = -0.7853982F;
 		this.bottomFin1.rotateAngleX += 0.62831855F;
 		this.bottomFin1.rotateAngleZ += 0.20943952F;

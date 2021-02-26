@@ -16,7 +16,6 @@ import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
-import net.minecraftforge.fml.common.event.FMLFingerprintViolationEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.registry.GameRegistry;
@@ -25,8 +24,7 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 	name = "Abyssal Depths",
 	version = "@VERSION@",
 	acceptedMinecraftVersions = "[1.12.2]",
-	dependencies = "required-after:minecraft;" + "required-after:forge@[14.23.5.2768,);",
-	certificateFingerprint = "@FINGERPRINT@")
+	dependencies = "required-after:minecraft;" + "required-after:forge@[14.23.5.2768,);")
 public class AbyssalDepths {
 	public static final String MOD_ID = "abyssaldepths";
 	@SidedProxy(clientSide = "chumbanotz.abyssaldepths.client.ClientProxy", serverSide = "chumbanotz.abyssaldepths.ServerProxy")
@@ -67,11 +65,6 @@ public class AbyssalDepths {
 				GameRegistry.registerWorldGenerator(new ADWorldGen(i), i);
 			}
 		}
-	}
-
-	@Mod.EventHandler
-	public void onFingerprintViolation(FMLFingerprintViolationEvent event) {
-		LOGGER.warn("Invalid fingerprint detected! The file " + event.getSource().getName() + " may have been tampered with. This version will NOT be supported by the author!");
 	}
 
 	public static ResourceLocation prefix(String name) {

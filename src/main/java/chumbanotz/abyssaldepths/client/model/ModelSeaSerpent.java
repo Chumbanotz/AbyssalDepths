@@ -4,10 +4,10 @@ import static chumbanotz.abyssaldepths.entity.SeaSerpent.PART_HEIGHT;
 import static chumbanotz.abyssaldepths.entity.SeaSerpent.PART_LENGTH;
 
 import chumbanotz.abyssaldepths.entity.SeaSerpent;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelRenderer;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.math.MathHelper;
 
 public class ModelSeaSerpent extends ModelBase {
@@ -134,7 +134,7 @@ public class ModelSeaSerpent extends ModelBase {
 	public void setAngles() {
 		for (JointModelRenderer model : this.anatomy) {
 			resetAngles(model);
-			resetAngles(model.getJoint());
+			resetAngles(model.getModel());
 		}
 
 		setRotation(this.mouth, 0.02617994F, 0.0F, 0.0F);
@@ -155,16 +155,12 @@ public class ModelSeaSerpent extends ModelBase {
 		}
 	}
 
-	public void animate(SeaSerpent base, float f, float f1, float f2, float f3, float f4, float f5) {
-		SeaSerpent serpent = (SeaSerpent)base;
-		serpent.resetBoneAngles();
-		serpent.updatePitchRotations(Minecraft.getMinecraft().getRenderPartialTicks());
-		serpent.updateYawRotations(Minecraft.getMinecraft().getRenderPartialTicks());
+	public void animate(SeaSerpent serpent, float f, float f1, float f2, float f3, float f4, float f5) {
 		float breatheAnim = MathHelper.sin(f2 * 0.1F);
 
 		for (int i = 0; i < serpent.getBoneList().length; ++i) {
-			this.anatomy[i].getJoint().rotateAngleX += serpent.getBoneList()[i].getRotation().x * 0.017453292F;
-			this.anatomy[i].getJoint().rotateAngleY += serpent.getBoneList()[i].getRotation().y * 0.017453292F;
+			this.anatomy[i].getModel().rotateAngleX += serpent.getBoneList()[i].getRotation().x * 0.017453292F;
+			this.anatomy[i].getModel().rotateAngleY += serpent.getBoneList()[i].getRotation().y * 0.017453292F;
 		}
 
 		this.mouth.rotateAngleX += Math.max(0.0F, breatheAnim) * 0.05F + (MathHelper.sin(this.swingProgress * (float)Math.PI) * 0.4F);
@@ -178,6 +174,14 @@ public class ModelSeaSerpent extends ModelBase {
 			this.tailFin[i][1].rotateAngleZ -= this.tail[2].rotateAngleX * 0.4F;
 			this.tailFin[i][2].rotateAngleZ += this.tail[2].rotateAngleX * 0.4F;
 		}
+	}
+
+	@Override
+	public void setLivingAnimations(EntityLivingBase entitylivingbaseIn, float limbSwing, float limbSwingAmount, float partialTickTime) {
+		SeaSerpent serpent = (SeaSerpent)entitylivingbaseIn;
+		serpent.resetBoneAngles();
+		serpent.updatePitchRotations(partialTickTime);
+		serpent.updateYawRotations(partialTickTime);
 	}
 
 	private static void resetAngles(ModelRenderer model) {

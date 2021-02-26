@@ -1,8 +1,9 @@
 package chumbanotz.abyssaldepths;
 
+import java.util.List;
+
 import chumbanotz.abyssaldepths.block.ADBlocks;
 import chumbanotz.abyssaldepths.block.Seaweed;
-import chumbanotz.abyssaldepths.entity.BodyPart;
 import chumbanotz.abyssaldepths.entity.SeaSerpent;
 import chumbanotz.abyssaldepths.entity.Seahorse;
 import chumbanotz.abyssaldepths.entity.billfish.Sailfish;
@@ -22,7 +23,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemFood;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.storage.loot.LootTableList;
 import net.minecraftforge.common.BiomeDictionary;
@@ -63,25 +63,25 @@ public class RegistryHandler {
 	@SubscribeEvent
 	public static void onEntityEntryRegistry(RegistryEvent.Register<EntityEntry> event) {
 		event.getRegistry().registerAll(
-				createEntityEntry("body_part", BodyPart.class).tracker(80, 1, true).build(),
-				createEntityEntry("fish", CommonFish.class, 8762546, 12307920, ADConfig.SPAWNS.fishWeight, 3, 5).build(),
-				createEntityEntry("clownfish", Clownfish.class, 13785366, 16777215, ADConfig.SPAWNS.clownfishWeight, 2, 3).build(),
-				createEntityEntry("seahorse", Seahorse.class, 13818758, 7833651, ADConfig.SPAWNS.seahorseWeight, 1, 3).build(),
-				createEntityEntry("butterflyfish", Butterflyfish.class, 8762546, 12307920, ADConfig.SPAWNS.butterflyfishWeight, 2, 5).build(),
-				createEntityEntry("masked_butterflyfish", Butterflyfish.Masked.class, 16438016, 3817060, ADConfig.SPAWNS.maskedButterflyfishWeight, 2, 5).build(),
-				createEntityEntry("raccoon_butterflyfish", Butterflyfish.Raccoon.class, 16297728, 1513499, ADConfig.SPAWNS.raccoonButterflyfishWeight, 3, 5).build(),
-				createEntityEntry("spotfin_butterflyfish", Butterflyfish.Spotfin.class, 16311296, 16121335, ADConfig.SPAWNS.spotfinButterflyfishWeight, 3, 5).build(),
-				createEntityEntry("bannerfish", Butterflyfish.Banner.class, 16183797, 1184274, ADConfig.SPAWNS.bannerfishWeight, 2, 5).build(),
-				createEntityEntry("fairy_basslet", Basslet.Fairy.class, 12599507, 16693761, ADConfig.SPAWNS.fairyBassletWeight, 1, 4).build(),
-				createEntityEntry("blackcap_basslet", Basslet.BlackCap.class, 12599507, 1184274, ADConfig.SPAWNS.blackcapBassletWeight, 1, 4).build(),
-				createEntityEntry("sailfish", Sailfish.class, 1060456, 14737632, ADConfig.SPAWNS.sailfishWeight, 1, 5).build(),
-				createEntityEntry("swordfish", Swordfish.class, 1060456, 14737632, ADConfig.SPAWNS.swordfishWeight, 1, 4).build(),
-				createEntityEntry("sea_serpent", SeaSerpent.class, 5938242, 9398119, ADConfig.SPAWNS.seaSerpentWeight, 1, 2).build()
+				createEntityEntry("fish", CommonFish.class, 8762546, 12307920).build(),
+				createEntityEntry("clownfish", Clownfish.class, 13785366, 16777215).build(),
+				createEntityEntry("seahorse", Seahorse.class, 13818758, 7833651).build(),
+				createEntityEntry("butterflyfish", Butterflyfish.class, 8762546, 12307920).build(),
+				createEntityEntry("masked_butterflyfish", Butterflyfish.Masked.class, 16438016, 3817060).build(),
+				createEntityEntry("raccoon_butterflyfish", Butterflyfish.Raccoon.class, 16297728, 1513499).build(),
+				createEntityEntry("spotfin_butterflyfish", Butterflyfish.Spotfin.class, 16311296, 16121335).build(),
+				createEntityEntry("bannerfish", Butterflyfish.Banner.class, 16183797, 1184274).build(),
+				createEntityEntry("fairy_basslet", Basslet.Fairy.class, 12599507, 16693761).build(),
+				createEntityEntry("blackcap_basslet", Basslet.BlackCap.class, 12599507, 1184274).build(),
+				createEntityEntry("sailfish", Sailfish.class, 1060456, 14737632).build(),
+				createEntityEntry("swordfish", Swordfish.class, 1060456, 14737632).build(),
+				createEntityEntry("sea_serpent", SeaSerpent.class, 5938242, 9398119).build()
 				);
+
+		addSpawns();
 	}
 
-	private static <T extends EntityLiving> EntityEntryBuilder<?> createEntityEntry(String name, Class<T> entityClass, int eggPrimary, int eggSecondary, int weight, int min, int max) {
-		addSpawn(entityClass, weight, min, max);
+	private static <T extends EntityLiving> EntityEntryBuilder<?> createEntityEntry(String name, Class<T> entityClass, int eggPrimary, int eggSecondary) {
 		return createEntityEntry(name, entityClass).egg(eggPrimary, eggSecondary).tracker(80, 3, true);
 	}
 
@@ -94,25 +94,56 @@ public class RegistryHandler {
 		return EntityEntryBuilder.<T>create().entity(entityClass).id(AbyssalDepths.prefix(name), entityId++).name(AbyssalDepths.MOD_ID + '.' + name);
 	}
 
-	private static void addSpawn(Class<? extends EntityLiving> entityClass, int weight, int min, int max) {
-		if (weight <= 0) {
+	private static void addSpawns() {
+		if (ADConfig.SPAWNS.biomeWhitelist.length == 0) {
 			return;
 		}
 
 		for (Biome biome : ForgeRegistries.BIOMES) {
-			boolean add = false;
-			if (BiomeDictionary.hasType(biome, BiomeDictionary.Type.NETHER) || BiomeDictionary.hasType(biome, BiomeDictionary.Type.END) || BiomeDictionary.hasType(biome, BiomeDictionary.Type.MUSHROOM) || BiomeDictionary.hasType(biome, BiomeDictionary.Type.VOID)) {
+			for (String modID : ADConfig.SPAWNS.biomeWhitelist) {
+				if (biome.getRegistryName() == null || !biome.getRegistryName().getNamespace().equals(modID)) {
+					continue;
+				}
+			}
+
+			List<Biome.SpawnListEntry> waterEntries = biome.getSpawnableList(EnumCreatureType.WATER_CREATURE);
+			if (waterEntries.isEmpty()) {
 				continue;
 			}
 
-			if (entityClass == CommonFish.class) {
-				add = BiomeDictionary.hasType(biome, BiomeDictionary.Type.WATER);
-			} else {
-				add = BiomeDictionary.hasType(biome, BiomeDictionary.Type.OCEAN);
+			if (BiomeDictionary.hasType(biome, BiomeDictionary.Type.RIVER)) {
+				addSpawn(waterEntries, CommonFish.class, ADConfig.SPAWNS.fishWeight, 3, 5);
 			}
 
-			if (add) {
-				biome.getSpawnableList(EnumCreatureType.WATER_CREATURE).add(new Biome.SpawnListEntry(entityClass, MathHelper.clamp(weight, 1, 100), min, max));
+			if (BiomeDictionary.hasType(biome, BiomeDictionary.Type.OCEAN)) {
+				addSpawn(waterEntries, CommonFish.class, ADConfig.SPAWNS.fishWeight, 3, 5);
+				addSpawn(waterEntries, Clownfish.class, ADConfig.SPAWNS.clownfishWeight, 2, 3);
+				addSpawn(waterEntries, Seahorse.class, ADConfig.SPAWNS.seahorseWeight, 1, 3);
+				addSpawn(waterEntries, Butterflyfish.class, ADConfig.SPAWNS.butterflyfishWeight, 2, 5);
+				addSpawn(waterEntries, Butterflyfish.Masked.class, ADConfig.SPAWNS.maskedButterflyfishWeight, 2, 5);
+				addSpawn(waterEntries, Butterflyfish.Raccoon.class, ADConfig.SPAWNS.raccoonButterflyfishWeight, 3, 5);
+				addSpawn(waterEntries, Butterflyfish.Spotfin.class, ADConfig.SPAWNS.spotfinButterflyfishWeight, 3, 5);
+				addSpawn(waterEntries, Butterflyfish.Banner.class, ADConfig.SPAWNS.bannerfishWeight, 2, 5);
+				addSpawn(waterEntries, Basslet.Fairy.class, ADConfig.SPAWNS.fairyBassletWeight, 1, 4);
+				addSpawn(waterEntries, Basslet.BlackCap.class, ADConfig.SPAWNS.blackcapBassletWeight, 1, 4);
+				addSpawn(waterEntries, Sailfish.class, ADConfig.SPAWNS.sailfishWeight, 1, 5);
+				addSpawn(waterEntries, Swordfish.class, ADConfig.SPAWNS.swordfishWeight, 1, 4);
+				addSpawn(waterEntries, SeaSerpent.class, ADConfig.SPAWNS.seaSerpentWeight, 1, 2);
+			}			
+		}
+	}
+
+	private static void addSpawn(List<Biome.SpawnListEntry> entries, Class<? extends EntityLiving> entityClass, int weight, int min, int max) {
+		if (weight > 0) {
+			entries.add(new Biome.SpawnListEntry(entityClass, weight, min, max));
+		}
+	}
+
+	@SubscribeEvent
+	public static void remapEntityEntries(RegistryEvent.MissingMappings<EntityEntry> event) {
+		for (RegistryEvent.MissingMappings.Mapping<EntityEntry> mapping : event.getAllMappings()) {
+			if (mapping.key.getPath().equals("body_part")) {
+				mapping.ignore();
 			}
 		}
 	}
@@ -120,12 +151,12 @@ public class RegistryHandler {
 	public static <T extends IForgeRegistryEntry<T>> T setRegistryName(String name, T entry) {
 		ResourceLocation registryName = AbyssalDepths.prefix(name);
 		if (entry instanceof Block) {
-			((Block)entry).setTranslationKey(AbyssalDepths.MOD_ID + '.' + registryName.getPath());
+			((Block)entry).setTranslationKey(registryName.getNamespace() + '.' + registryName.getPath());
 			((Block)entry).setCreativeTab(AbyssalDepths.CREATIVE_TAB);
 		}
 
 		if (entry instanceof Item) {
-			((Item)entry).setTranslationKey(AbyssalDepths.MOD_ID + '.' + registryName.getPath());
+			((Item)entry).setTranslationKey(registryName.getNamespace() + '.' + registryName.getPath());
 			((Item)entry).setCreativeTab(AbyssalDepths.CREATIVE_TAB);
 		}
 

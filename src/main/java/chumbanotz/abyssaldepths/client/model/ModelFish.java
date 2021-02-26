@@ -70,8 +70,8 @@ public class ModelFish extends ModelBase {
 	}
 
 	public void setAngles() {
-		this.resetAngles(this.head, this.body, this.topTail, this.topTail.getJoint(), this.bottomTail, this.straightTail, this.topFin, this.leftFin, this.rightFin);
-		this.topTail.getJoint().rotateAngleX = 0.62831855F;
+		this.resetAngles(this.head, this.body, this.topTail, this.topTail.getModel(), this.bottomTail, this.straightTail, this.topFin, this.leftFin, this.rightFin);
+		this.topTail.getModel().rotateAngleX = 0.62831855F;
 		this.bottomTail.rotateAngleX = -1.2566371F;
 		this.leftFin.rotateAngleX = -0.15707964F;
 		this.leftFin.rotateAngleY = -0.19634955F;

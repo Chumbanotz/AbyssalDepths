@@ -5,14 +5,21 @@ import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.MoverType;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.passive.IAnimals;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.network.datasync.DataParameter;
+import net.minecraft.network.datasync.DataSerializers;
+import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-public abstract class WaterCreature extends AquaticCreature implements IAnimals {
+public abstract class WaterCreature extends AquaticCreature {
+	private static final DataParameter<Float> RED = EntityDataManager.createKey(WaterCreature.class, DataSerializers.FLOAT);
+	private static final DataParameter<Float> GREEN = EntityDataManager.createKey(WaterCreature.class, DataSerializers.FLOAT);
+	private static final DataParameter<Float> BLUE = EntityDataManager.createKey(WaterCreature.class, DataSerializers.FLOAT);
 	public School school;
 	protected double fleeDistance = 10.0D;
 	protected EntityLivingBase fleeFromEntity;
@@ -21,6 +28,36 @@ public abstract class WaterCreature extends AquaticCreature implements IAnimals 
 
 	public WaterCreature(World world) {
 		super(world);
+	}
+
+	@Override
+	protected void entityInit() {
+		super.entityInit();
+		this.dataManager.register(RED, 1.0F);
+		this.dataManager.register(GREEN, 1.0F);
+		this.dataManager.register(BLUE, 1.0F);
+	}
+
+	public float getRed() {
+		return this.dataManager.get(RED);
+	}
+
+	public float getGreen() {
+		return this.dataManager.get(GREEN);
+	}
+
+	public float getBlue() {
+		return this.dataManager.get(BLUE);
+	}
+
+	protected void setColor(float red, float green, float blue) {
+		this.dataManager.set(RED, red);
+		this.dataManager.set(GREEN, green);
+		this.dataManager.set(BLUE, blue);
+	}
+
+	public boolean isColorful() {
+		return this.getRed() != 1.0F && this.getGreen() != 1.0F && this.getBlue() != 1.0F;
 	}
 
 	public void initSchool() {
@@ -45,21 +82,10 @@ public abstract class WaterCreature extends AquaticCreature implements IAnimals 
 		double prevX = this.posX;
 		double prevY = this.posY;
 		double prevZ = this.posZ;
-		int i = this.getAir();
 		super.onUpdate();
 		this.dPosX = this.posX - prevX;
 		this.dPosY = this.posY - prevY;
 		this.dPosZ = this.posZ - prevZ;
-		if (this.isEntityAlive() && !this.isInWater()) {
-			--i;
-			this.setAir(i);
-			if (this.getAir() == -20) {
-				this.setAir(0);
-				this.attackEntityFrom(DamageSource.DROWN, 2.0F);
-			}
-		} else {
-			this.setAir(400);
-		}
 
 		if (!this.world.isRemote) {
 			if (this.getTamed() && this.ticksExisted % 100 == 0) {
@@ -154,7 +180,7 @@ public abstract class WaterCreature extends AquaticCreature implements IAnimals 
 			}
 		}
 
-		if (this.findNewPath() && this.ticksExisted > 20 && this.school.getLeader() == this) {
+		if (this.idleTime < 100 && this.findNewPath() && this.ticksExisted > 20 && this.school.getLeader() == this) {
 			this.setRandomPath();
 		}
 
@@ -192,9 +218,22 @@ public abstract class WaterCreature extends AquaticCreature implements IAnimals 
 		return !this.getTamed();
 	}
 
+	@Override
+	public boolean attackEntityFrom(DamageSource source, float dmg) {
+		if (!super.attackEntityFrom(source, dmg)) {
+			return false;
+		} else {
+			if (source.getTrueSource() instanceof EntityLivingBase) {
+				this.fleeFromEntity = (EntityLivingBase)source.getTrueSource();
+			}
+
+			return true;
+		}
+	}
+
 	private void fleeFromNearbyPlayers() {
 		EntityPlayer player = this.world.getNearestPlayerNotCreative(this, 9.0D);
-		if (player != null) {
+		if (player != null && this.getEntitySenses().canSee(player)) {
 			float angle = (float)Math.atan2(player.posZ - this.posZ, player.posX - this.posX) * 57.295776F - 90.0F;
 			angle = ADGlobal.wrapAngleAround(angle, this.rotationYaw);
 			float delta = Math.abs(angle - this.rotationYaw);
@@ -216,6 +255,21 @@ public abstract class WaterCreature extends AquaticCreature implements IAnimals 
 			if (this.school.getLeader() == this) {
 				this.school.chooseRandomLeader();
 			}
+		}
+	}
+
+	@Override
+	public void writeEntityToNBT(NBTTagCompound compound) {
+		super.writeEntityToNBT(compound);
+		compound.setTag("Color", this.newFloatNBTList(this.getRed(), this.getGreen(), this.getBlue()));
+	}
+
+	@Override
+	public void readEntityFromNBT(NBTTagCompound compound) {
+		super.readEntityFromNBT(compound);
+		if (compound.hasKey("Color", 9)) {
+			NBTTagList nbtTagList = compound.getTagList("Color", 5);
+			this.setColor(nbtTagList.getFloatAt(0), nbtTagList.getFloatAt(1), nbtTagList.getFloatAt(2));
 		}
 	}
 }
